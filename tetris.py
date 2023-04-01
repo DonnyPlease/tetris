@@ -1,6 +1,5 @@
 import random
 import curses
-from os import system
 import time
 
 
@@ -64,13 +63,19 @@ class Game():
         self.stdscr.refresh()
         # self.draw_win_test()
         self.current_object = self.generate_object()
-        self._draw_object(self.current_object)
+        self.draw_object(self.current_object)
         self.free_squares = [[i,j] for j in range(10) for i in range(-5,21)]
     
     
+    def can_move_down(self):
+        obj = self.current_object
+        x = obj.position_x
+        y = obj.position_y
+        for square in obj.squares:
+            if not [-square[0]+y+1,square[1]+x] in self.free_squares:
+                return False
+        return True
 
-
-    
     def generate_object(self):
         gen = random.randint(0,1)
         if gen == 0:
@@ -84,6 +89,8 @@ class Game():
             if not [-square[0]+y+1,square[1]+x] in self.free_squares:
                 return False
         return True
+
+
     def place_object(self):
         self.objects.append(self.current_object)
         x = self.current_object.position_x
@@ -98,12 +105,13 @@ class Game():
             self.place_object()
             return        
         self.current_object.move_down()
-        self.pad.clear()
-        self._draw_object(self.current_object)
+        self.draw_pad()
     
 
     def draw_pad(self):
-     
+        self.pad.clear()
+        self.draw_objects()
+        self.draw_object(self.current_object) 
   
 
   
@@ -123,16 +131,17 @@ class Game():
             self.stdscr.addstr(20+self.upper_offset, i+self.left_offset+1,"-")
             
             
-    def _draw_object(self,obj):
+    def draw_object(self,obj):
         for square in obj.squares:
             row = obj.position_y-square[0]+4
             col = obj.position_x+square[1]
             self.pad.addstr(row,col*2,"|#|")      
-            self.pad.refresh(5, 1, self.upper_offset, self.left_offset+1 ,20+self.upper_offset-1 ,19+self.left_offset)
+
+        self.pad.refresh(5, 1, self.upper_offset, self.left_offset+1 ,20+self.upper_offset-1 ,19+self.left_offset)
     
-    def _draw_objects(self):
+    def draw_objects(self):
         for obj in self.objects:
-            self._draw_object(obj)
+            self.draw_object(obj)
             
     def user_input(self, key):
         if key == curses.KEY_RIGHT:
@@ -148,9 +157,9 @@ def main(stdscr):
     stdscr.resize(40,40)
     stdscr.nodelay(1)
     game = Game(stdscr) 
-    = None
+    start = None
     
-e True:
+    while True:
         start = time.time()
         end = start
         while (end-start)<0.1:
