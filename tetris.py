@@ -28,15 +28,18 @@ class O_Block(Shape):
         self.squares = [[0,0],[0,1],[1,0],[1,1]]
         self.width = 2
         
+
     def rotate(self):
         return
     
+
 class I_Block(Shape):
     def __init__(self):
         super(I_Block, self).__init__()
         self.squares = [[0,0],[1,0],[2,0],[3,0]]
         self.width = 1
     
+
     def rotate(self):
         # TODO: implement I rotation
         if self.direction == 0:
@@ -46,12 +49,14 @@ class I_Block(Shape):
         self.squares = [[0,0],[1,0],[2,0],[3,0]]
         self.direction = 0
     
+
 class T_Block(Shape):
     def __init__(self):
         super(T_Block, self).__init__()
         self.squares = [[0,0],[0,1],[0,2],[1,1]]
         self.width = 1
     
+
     def rotate(self):
         if self.direction == 0:
             self.squares = [[0,0],[1,0],[1,1],[2,0]]
@@ -67,11 +72,12 @@ class T_Block(Shape):
             self.direction = 0
         return
     
+
 # TODO: add the remaining 4 blocks    
 # TODO: check if the rotation is possible before rotating - it might need the change in structure of the code
-# TODO: change the way placed objects are drawn so that you can remove an entire full 
-#       row and move all the rows above one step down
-# TODO: remove a row if it is full - flash and make all the rows above fall
+# TODO: maybe flash a row that is full
+# TODO: add docummentation to the classes
+
 
 class Game():
     def __init__(self, stdscr):
@@ -90,7 +96,7 @@ class Game():
         # self.draw_win_test()
         self.current_object = self.generate_object()
         self.draw_object(self.current_object)
-        self.free_squares = [[i,j] for j in range(10) for i in range(-5,21)]
+        self.free_squares = [[i,j] for j in range(self.width) for i in range(-5,21)]
     
     
     def can_move_down(self):
@@ -102,6 +108,7 @@ class Game():
                 return False
         return True
 
+    
     def can_move_right(self):
         obj = self.current_object
         x = obj.position_x
@@ -110,6 +117,11 @@ class Game():
             if not [-square[0]+y,square[1]+x+1] in self.free_squares:
                 return False
         return True
+    
+    def move_down(self):
+        if not self.can_move_down():
+            return
+        self.current_object.move_down()
     
     def move_right(self):
         if not self.can_move_right():
@@ -138,13 +150,14 @@ class Game():
             return I_Block()
         if gen == 2:
             return T_Block()
-
-        x = self.current_object.position_x
-        y = self.current_object.position_y
-        for square in self.current_object.squares:
-            if not [-square[0]+y+1,square[1]+x] in self.free_squares:
-                return False
-        return True
+        if gen == 3:
+            return
+        if gen == 4:
+            return
+        if gen == 5:
+            return
+        if gen == 6:
+            return
 
 
     def place_object(self):
@@ -155,18 +168,56 @@ class Game():
             self.free_squares.remove([-square[0]+y,square[1]+x])
         self.current_object = self.generate_object()
             
-    
+    def get_full_lines(self):
+        lines = []
+        for i in range(20,0,-1):
+            line = True
+            for j in range(10):
+                if [i,j] in self.free_squares: 
+                    line = False
+                    break
+            if line: 
+                lines.append(i)
+        return lines       
+
+    def remove_and_move_lines(self,lines):
+        full_lines = sorted(lines)
+        for line_index in range(21):
+            if not line_index in full_lines: continue
+            for sq in self.free_squares:
+                if sq[0]< line_index:
+                    sq[0] += 1
+            for i in range(10):
+                self.free_squares.append([-5,i])
+
+            
     def progress(self):
         if not self.can_move_down():
             self.place_object()
+            full_lines = self.get_full_lines()
+            if full_lines:
+                self.remove_and_move_lines(full_lines)
             return        
         self.current_object.move_down()
         self.draw_pad()
     
 
+    def draw_taken_squares(self):
+        for i in range(1,21):
+            for j in range(10):
+                # if [i,j] in self.free_squares: continue
+                if [i,j] in self.free_squares: 
+                    self.pad.addstr(i+4,j*2, " . ")
+                    continue
+                self.pad.addstr(i+4,j*2,"|@|")
+
+
+
+    
     def draw_pad(self):
         self.pad.clear()
-        self.draw_objects()
+        # self.draw_objects()
+        self.draw_taken_squares()
         self.draw_object(self.current_object) 
   
 
@@ -201,8 +252,10 @@ class Game():
         for obj in self.objects:
             self.draw_object(obj)
          
+         
     def rotate(self):
         self.current_object.rotate()     
+
 
     def user_input(self, key):
         if key == curses.KEY_RIGHT:
@@ -211,6 +264,9 @@ class Game():
             self.move_left()
         elif key == curses.KEY_UP:
             self.rotate()
+        elif key == curses.KEY_DOWN:
+            self.move_down()
+        curses.flushinp()
             
         self.draw_pad()
            
@@ -225,7 +281,7 @@ def main(stdscr):
     while True:
         start = time.time()
         end = start
-        while (end-start)<0.01:
+        while (end-start)<0.2:
             key = stdscr.getch()
             if key == 113: break
             if not (key == -1):
