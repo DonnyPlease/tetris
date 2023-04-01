@@ -7,7 +7,7 @@ class Shape:
     def __init__(self):
         self.direction = 0
         self.squares = []
-        self.position_x = 0
+        self.position_x = 4
         self.position_y = 0
         self.width = 1
         
@@ -21,11 +21,9 @@ class Shape:
         self.position_y += 1
         
     def move_left(self):
-        if self.position_x < 1: return
         self.position_x -= 1
         
     def move_right(self):
-        if self.position_x+self.width > 9: return
         self.position_x += 1
         
     
@@ -46,6 +44,16 @@ class I_Block(Shape):
     
     def rotate():
         # TODO: implement I rotation
+        return
+    
+class T_Block(Shape):
+    def __init__(self):
+        super(T_Block, self).__init__()
+        self.squares = [[0,0],[0,1],[0,2],[1,1]]
+        self.width = 1
+    
+    def rotate():
+        # TODO: implement T rotation
         return
     
 class Game():
@@ -76,12 +84,42 @@ class Game():
                 return False
         return True
 
+    def can_move_right(self):
+        obj = self.current_object
+        x = obj.position_x
+        y = obj.position_y
+        for square in obj.squares:
+            if not [-square[0]+y,square[1]+x+1] in self.free_squares:
+                return False
+        return True
+    
+    def move_right(self):
+        if not self.can_move_right():
+            return
+        self.current_object.move_right()
+    
+    def move_left(self):
+        if not self.can_move_left():
+            return
+        self.current_object.move_left()
+    
+    def can_move_left(self):
+        obj = self.current_object
+        x = obj.position_x
+        y = obj.position_y
+        for square in obj.squares:
+            if not [-square[0]+y,square[1]-1+x] in self.free_squares:
+                return False
+        return True
+
     def generate_object(self):
-        gen = random.randint(0,1)
+        gen = random.randint(0,2)
         if gen == 0:
             return O_Block()
         if gen == 1:
             return I_Block()
+        if gen == 2:
+            return T_Block()
 
         x = self.current_object.position_x
         y = self.current_object.position_y
@@ -121,6 +159,7 @@ class Game():
                 self.pad.addstr(i,j,"@")
         self.pad.refresh(5, 1, self.upper_offset, self.left_offset+1 ,20+self.upper_offset ,19+self.left_offset)
         
+
     def _draw_game(self):
         self.stdscr.clear()
         for i in range(21):
@@ -139,15 +178,17 @@ class Game():
 
         self.pad.refresh(5, 1, self.upper_offset, self.left_offset+1 ,20+self.upper_offset-1 ,19+self.left_offset)
     
+
     def draw_objects(self):
         for obj in self.objects:
             self.draw_object(obj)
             
+
     def user_input(self, key):
         if key == curses.KEY_RIGHT:
-            self.current_object.move_right()
+            self.move_right()
         elif key == curses.KEY_LEFT:
-            self.current_object.move_left()
+            self.move_left()
             
         self.draw_pad()
            
@@ -162,13 +203,13 @@ def main(stdscr):
     while True:
         start = time.time()
         end = start
-        while (end-start)<0.1:
+        while (end-start)<0.01:
             key = stdscr.getch()
             if key == 113: break
             if not (key == -1):
                 game.user_input(key)
             end = time.time()
-            time.sleep(0.01)
+            time.sleep(0.05)
 
         if key == 113:
             break
@@ -177,4 +218,3 @@ def main(stdscr):
         
 
 curses.wrapper(main)
-
