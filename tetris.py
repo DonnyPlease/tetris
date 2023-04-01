@@ -11,12 +11,7 @@ class Shape:
         self.position_y = 0
         self.width = 1
         
-    def rotateRight(self):
-        self.direction = (self.direction+1)//4
-        
-    def rotateLeft(self):
-        self.direction = (self.direction+3)//4
-        
+    
     def move_down(self):
         self.position_y += 1
         
@@ -33,7 +28,7 @@ class O_Block(Shape):
         self.squares = [[0,0],[0,1],[1,0],[1,1]]
         self.width = 2
         
-    def rotate():
+    def rotate(self):
         return
     
 class I_Block(Shape):
@@ -42,9 +37,14 @@ class I_Block(Shape):
         self.squares = [[0,0],[1,0],[2,0],[3,0]]
         self.width = 1
     
-    def rotate():
+    def rotate(self):
         # TODO: implement I rotation
-        return
+        if self.direction == 0:
+            self.squares = [[0,0],[0,1],[0,2],[0,3]]
+            self.direction = 1
+            return
+        self.squares = [[0,0],[1,0],[2,0],[3,0]]
+        self.direction = 0
     
 class T_Block(Shape):
     def __init__(self):
@@ -52,13 +52,31 @@ class T_Block(Shape):
         self.squares = [[0,0],[0,1],[0,2],[1,1]]
         self.width = 1
     
-    def rotate():
-        # TODO: implement T rotation
+    def rotate(self):
+        if self.direction == 0:
+            self.squares = [[0,0],[1,0],[1,1],[2,0]]
+            self.direction = 1
+        elif self.direction == 1:
+            self.squares = [[1,0],[0,1],[1,1],[1,2]]
+            self.direction = 2
+        elif self.direction == 2:
+            self.squares = [[0,1],[1,0],[1,1],[2,1]]
+            self.direction = 3
+        elif self.direction == 3:
+            self.squares = [[0,0],[0,1],[0,2],[1,1]]
+            self.direction = 0
         return
     
+# TODO: add the remaining 4 blocks    
+# TODO: check if the rotation is possible before rotating - it might need the change in structure of the code
+# TODO: change the way placed objects are drawn so that you can remove an entire full 
+#       row and move all the rows above one step down
+# TODO: remove a row if it is full - flash and make all the rows above fall
+
 class Game():
     def __init__(self, stdscr):
         self.speed = 1
+        self.score = 0
         self.height = 25
         self.width = 10
         self.stdscr = stdscr
@@ -182,13 +200,17 @@ class Game():
     def draw_objects(self):
         for obj in self.objects:
             self.draw_object(obj)
-            
+         
+    def rotate(self):
+        self.current_object.rotate()     
 
     def user_input(self, key):
         if key == curses.KEY_RIGHT:
             self.move_right()
         elif key == curses.KEY_LEFT:
             self.move_left()
+        elif key == curses.KEY_UP:
+            self.rotate()
             
         self.draw_pad()
            
