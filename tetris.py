@@ -133,7 +133,7 @@ class O_Block(Shape):
     """
     Shape that is a two by two box - O. It has only one orientation thanks to rotations symmetry.
     The block looks like this:
-                        self.direction = 0 : |#|#|
+                        self.direction == 0 : |#|#|
                                              |#|#|      
     """
     def __init__(self):
@@ -145,12 +145,12 @@ class I_Block(Shape):
     """
     Shape that is one four by one line. It has two orientations (directions).
     The block looks like this:
-                        self.direction = 0 : |#|
+                        self.direction == 0 : |#|
                                              |#|
                                              |#|
                                              |#|
                                              
-                        self.direction = 1 : |#|#|#|#|
+                        self.direction == 1 : |#|#|#|#|
     """
     def __init__(self):
         super(I_Block, self).__init__()
@@ -163,21 +163,20 @@ class T_Block(Shape):
     """
     This block has four orientations.
     The block looks like this:
-                        self.direction = 0 :     |#|
+                        self.direction == 0 :    |#|
                                                |#|#|#|
                                                
-                        self.direction = 1 :   |#|
+                        self.direction == 1 :  |#|
                                                |#|#|
                                                |#|
                                                    
-                        self.direction = 3 :   |#|#|#|
+                        self.direction == 3 :   |#|#|#|
                                                  |#|
 
-                        self.direction = 4 :     |#|
+                        self.direction == 4 :    |#|
                                                |#|#|
                                                  |#|
     """
-    
     def __init__(self):
         super(T_Block, self).__init__()
         self.rotations = 4
@@ -188,6 +187,16 @@ class T_Block(Shape):
 
     
 class Z_Block(Shape):
+    """
+    The block in the shape of the letter z.
+    The block looks like this:
+                        self.direction == 0: |#|#|
+                                               |#|#|
+                                             
+                        self.direction == 1:     |#|
+                                               |#|#|
+                                               |#|
+    """ 
     def __init__(self):
         super(Z_Block, self).__init__()
         self.rotations = 2
@@ -196,6 +205,16 @@ class Z_Block(Shape):
     
     
 class S_Block(Shape):
+    """
+    The block in the shape of the letter s.
+    The block looks like this:
+                        self.direction == 0:   |#|#|
+                                             |#|#|
+                                             
+                        self.direction == 1:   |#|
+                                               |#|#|
+                                                 |#|
+    """ 
     def __init__(self):
         super(S_Block, self).__init__()
         self.rotations = 2
@@ -204,6 +223,23 @@ class S_Block(Shape):
     
     
 class L_Block(Shape):
+    """
+    The block in the shape of the letter L.
+    The block looks like this:
+                        self.direction == 0:  |#|
+                                              |#|
+                                              |#|#|
+                                             
+                        self.direction == 1:  |#|#|#|
+                                              |#|
+
+                        self.direction == 2:  |#|#|
+                                                |#|
+                                                |#|
+                                             
+                        self.direction == 3:      |#|
+                                              |#|#|#|
+    """ 
     def __init__(self):
         super(L_Block, self).__init__()
         self.rotations = 4
@@ -214,6 +250,23 @@ class L_Block(Shape):
     
     
 class J_Block(Shape):
+    """
+    The block in the shape of the letter J.
+    The block looks like this:
+                        self.direction == 0:    |#|
+                                                |#|
+                                              |#|#|
+                                             
+                        self.direction == 1:  |#|
+                                              |#|#|#|
+
+                        self.direction == 2:  |#|#|
+                                              |#|
+                                              |#|
+                                             
+                        self.direction == 3:  |#|#|#|
+                                                  |#|
+    """ 
     def __init__(self):
         super(J_Block, self).__init__()
         self.rotations = 4
@@ -225,9 +278,10 @@ class J_Block(Shape):
 
 # TODO: if the rotation is not possible, check whether it is not possible after moving it left once or twice 
 # TODO: maybe flash a row that is full
-# TODO: add docummentation to the classes
+# TODO: add docummentation to the classes - in progress
 # TODO: configure a pad with next block so that it looks nice
 # TODO: configure a pad with the score so that it looks nice
+# TODO: create a class of GUI-curses so that no drawing code is located in the class Game
 
 
 class Game():
@@ -245,13 +299,12 @@ class Game():
         self.main_pad = curses.newpad(26, 21)
         self.score_pad = curses.newpad(5, 5)
         self.next_pad = curses.newpad(8,16)
-        self._draw_game()
+        self.draw_game()
         # self.stdscr.refresh()
         # self.draw_win_test()
         self.current_object = self.generate_object()
         self.draw_object(self.current_object)
         self.free_squares = [[i,j] for j in range(self.width) for i in range(-5,21)]
-    
     
     def update_next_object(self):
         obj = self.next_object = self.generate_object()
@@ -263,8 +316,6 @@ class Game():
 
         self.next_pad.refresh(0, 0, 8, 30 ,15 ,45)
         
-
-    
     def update_score(self, erased_lines):
         if erased_lines == 1:
             self.score += 1
@@ -275,38 +326,58 @@ class Game():
         elif erased_lines == 4:
             self.score += 64
         
-        
         self.score_pad.addstr(3,1,str(self.score))
         self.score_pad.refresh(0,0,20,30,24,34)
         
-    def can_rotate(self):
-        obj = self.current_object
-        x = obj.position_x
-        y = obj.position_y
-        for square in obj.get_squares(rotated=True):
-            if not [-square[0]+y, square[1]+x] in self.free_squares:
+    def can_rotate(self,moved_left=0):
+        x = self.current_object.position_x
+        y = self.current_object.position_y
+        for square in self.current_object.get_squares(rotated=True):
+            if not [-square[0]+y, square[1]+x-moved_left] in self.free_squares:
                 return False
         return True
     
     def can_move_down(self):
-        obj = self.current_object
-        x = obj.position_x
-        y = obj.position_y
-        for square in obj.get_squares():
+        x = self.current_object.position_x
+        y = self.current_object.position_y
+        for square in self.current_object.get_squares():
             if not [-square[0]+y+1,square[1]+x] in self.free_squares:
                 return False
         return True
 
     
     def can_move_right(self):
-        obj = self.current_object
-        x = obj.position_x
-        y = obj.position_y
-        for square in obj.get_squares():
+        x = self.current_object.position_x
+        y = self.current_object.position_y
+        for square in self.current_object.get_squares():
             if not [-square[0]+y,square[1]+x+1] in self.free_squares:
                 return False
         return True
     
+    
+    def can_move_left(self):
+        x = self.current_object.position_x
+        y = self.current_object.position_y
+        for square in self.current_object.get_squares():
+            if not [-square[0]+y,square[1]-1+x] in self.free_squares:
+                return False
+        return True
+
+    def rotate(self):
+        if self.can_rotate(): 
+            self.current_object.rotate()
+            return     
+        if self.can_rotate(moved_left=1):
+            self.current_object.move_left()
+            self.current_object.rotate()
+            return
+        if self.can_rotate(moved_left=3):
+            self.current_object.move_left()
+            self.current_object.move_left()
+            self.current_object.move_left()
+            self.current_object.rotate()
+            return
+
     def move_down(self):
         if not self.can_move_down():
             return
@@ -321,15 +392,6 @@ class Game():
         if not self.can_move_left():
             return
         self.current_object.move_left()
-    
-    def can_move_left(self):
-        obj = self.current_object
-        x = obj.position_x
-        y = obj.position_y
-        for square in obj.get_squares():
-            if not [-square[0]+y,square[1]-1+x] in self.free_squares:
-                return False
-        return True
 
     def generate_object(self):
         gen = random.randint(0, 6)
@@ -402,7 +464,6 @@ class Game():
                     continue
                 self.main_pad.addstr(i+4,j*2,"|@|")
 
-
     
     def draw_pad(self):
         self.main_pad.clear()
@@ -410,7 +471,6 @@ class Game():
         self.draw_taken_squares()
         self.draw_object(self.current_object) 
   
-
   
     def draw_win_test(self):
         for i in range(25):
@@ -419,7 +479,7 @@ class Game():
         self.main_pad.refresh(5, 1, self.upper_offset, self.left_offset+1 ,20+self.upper_offset ,19+self.left_offset)
         
 
-    def _draw_game(self):
+    def draw_game(self):
         self.stdscr.clear()
         for i in range(21):
             self.stdscr.addstr(i+self.upper_offset, self.left_offset,"|")
@@ -446,12 +506,7 @@ class Game():
     def draw_objects(self):
         for obj in self.objects:
             self.draw_object(obj)
-         
-         
-    def rotate(self):
-        if not self.can_rotate(): return
-        self.current_object.rotate()     
-
+        
 
     def user_input(self, key):
         if key == curses.KEY_RIGHT:
