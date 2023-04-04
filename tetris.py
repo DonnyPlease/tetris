@@ -1,3 +1,5 @@
+"""This is a game of tetris developed by an absolute amateur. Thank you.
+"""
 import random
 import curses
 import time
@@ -5,7 +7,7 @@ import time
 
 class Shape:
     """
-    A class that represents a tetris object. Classes of all of the main 7 tetris shapes are derived from this class.
+    A class that represents a tetris shape. Classes of all of the main 7 tetris shapes are derived from this class.
     
     ...
         
@@ -18,18 +20,18 @@ class Shape:
         do not always consider all four possibilites.
     
     rotations : int
-        Number of posible orientations an object can have.
+        Number of posible orientations a shape can have.
     
     position_x : int
-        X coordinate of the bottom left corner of the object.
+        X coordinate of the bottom left corner of the shape.
     
     position_y : int
-        Y coordinate of the bottome left corner of the object.
+        Y coordinate of the bottome left corner of the shape.
     
     squares : list of lists of lists of int
         The first index chooses a direction. That is the first extraction by which we get a list of squares which make
-        an object in the chosen orietation. Each square is a list of two integers [y_coordiate, x_coordinate] relative 
-        to the base point which is the bottom left corner of the object. These lists do not change during the game.
+        an shape in the chosen orietation. Each square is a list of two integers [y_coordiate, x_coordinate] relative 
+        to the base point which is the bottom left corner of the shape These lists do not change during the game.
     """
 
     def __init__(self):
@@ -44,10 +46,10 @@ class Shape:
         self.rotations = 1  # Initialize rotations attribute
         self.squares = []  # Initialize squares
         self.position_x = 5  # Initialize position x so that it starts in the middle
-        self.position_y = 0  # Initialize position y so that it start outside of the visible field
+        self.position_y = 0  # Initialize position y so that it starts outside of the visible field
         
     def move_down(self):
-        """Function that represnts 'down' movement of the object.
+        """Function that represnts a 'down' movement of the shape.
         
         Parameters
         ----------
@@ -59,7 +61,7 @@ class Shape:
         self.position_y += 1
         
     def move_left(self):
-        """Function that represnts 'left' movement of the object.
+        """Function that represnts a'left' movement of the shape.
         
         Parameters
         ----------
@@ -71,7 +73,7 @@ class Shape:
         self.position_x -= 1
         
     def move_right(self):
-        """Function that represnts 'right' movement of the object.
+        """Function that represnts a 'right' movement of the shape.
         
         Parameters
         ----------
@@ -83,7 +85,7 @@ class Shape:
         self.position_x += 1
 
     def get_squares(self,rotated=False):
-        """'The getter' of list of the squares that represent the shape of the object.
+        """'The getter' of list of the squares that represent the shape of the shape.
         
         Parameters
         ----------
@@ -92,38 +94,90 @@ class Shape:
             
         Returns
         -------
-        list of squares that represent the shape of the object. If rotated is not stated or is False, the returned shape
-        corresponds to the current orientation of the object represented by the attribute 'self.direction'.
+        list of squares that represent the shape. If rotated is not stated or is False, the returned shape
+        corresponds to the current orientation of the shape represented by the attribute 'self.direction'.
         """
         if not rotated:
             return self.squares[self.direction]
         return self.squares[self.direction-self.rotations+1]
     
+    def rotate(self):
+        """
+        A function representing a rotation of a particular shape based on how many different orientations it has.
+        We only use a clock-wise rotation which is represented by incrementing a variable self.direction by one modulo 
+        number of possible orientations stored in variable self.rotations.
+        ...
+        Arguments
+        ---------
+        none
+        
+        Returns
+        -------
+        nothing
+        """
+        if self.rotations == 1:
+            return
+        
+        if self.rotations == 2:
+            if not self.direction:
+                self.direction = 1
+                return
+            self.direction = 0
+            return
+        
+        if self.rotations == 4:
+            self.direction = (self.direction+1)%4
+            return
     
 class O_Block(Shape):
+    """
+    Shape that is a two by two box - O. It has only one orientation thanks to rotations symmetry.
+    The block looks like this:
+                        self.direction = 0 : |#|#|
+                                             |#|#|      
+    """
     def __init__(self):
         super(O_Block, self).__init__()
         self.squares.append([[0,0],[0,1],[1,0],[1,1]])
         
-    def rotate(self):
-        return
-
 
 class I_Block(Shape):
+    """
+    Shape that is one four by one line. It has two orientations (directions).
+    The block looks like this:
+                        self.direction = 0 : |#|
+                                             |#|
+                                             |#|
+                                             |#|
+                                             
+                        self.direction = 1 : |#|#|#|#|
+    """
     def __init__(self):
         super(I_Block, self).__init__()
         self.rotations = 2
         self.squares.append([[0,0],[1,0],[2,0],[3,0]])  
         self.squares.append([[0,0],[0,1],[0,2],[0,3]])
 
-    def rotate(self):
-        if not self.direction:
-            self.direction = 1
-            return
-        self.direction = 0
-    
 
 class T_Block(Shape):
+    """
+    This block has four orientations.
+    The block looks like this:
+                        self.direction = 0 :     |#|
+                                               |#|#|#|
+                                               
+                        self.direction = 1 :   |#|
+                                               |#|#|
+                                               |#|
+                                                   
+                        self.direction = 3 :   |#|#|#|
+                                                 |#|
+
+                        self.direction = 4 :     |#|
+                                               |#|#|
+                                                 |#|
+    """
+    
     def __init__(self):
         super(T_Block, self).__init__()
         self.rotations = 4
@@ -132,9 +186,6 @@ class T_Block(Shape):
         self.squares.append([[1,0], [0,1], [1,1], [1,2]])
         self.squares.append([[0,1], [1,0], [1,1], [2,1]])
 
-    def rotate(self):
-        self.direction = (self.direction+1)%4
-        return
     
 class Z_Block(Shape):
     def __init__(self):
@@ -143,11 +194,6 @@ class Z_Block(Shape):
         self.squares.append([[1,0], [0,1], [1,1], [0,2]])
         self.squares.append([[0,0], [1,0], [1,1], [2,1]])
     
-    def rotate(self):
-        if not self.direction:
-            self.direction = 1
-            return
-        self.direction = 0
     
 class S_Block(Shape):
     def __init__(self):
@@ -156,11 +202,6 @@ class S_Block(Shape):
         self.squares.append([[0,0], [0,1], [1,1], [1,2]])
         self.squares.append([[0,1], [1,0], [1,1], [2,0]])
     
-    def rotate(self):
-        if not self.direction:
-            self.direction = 1
-            return
-        self.direction = 0
     
 class L_Block(Shape):
     def __init__(self):
@@ -170,11 +211,6 @@ class L_Block(Shape):
         self.squares.append([[0,0], [1,0], [1,1], [1,2]])
         self.squares.append([[0,1], [1,1], [2,1], [2,0]])
         self.squares.append([[0,0], [0,1], [0,2], [1,2]])
-    
-    def rotate(self):
-        self.direction = (self.direction+1)%4
-        return
-    
     
     
 class J_Block(Shape):
@@ -186,9 +222,6 @@ class J_Block(Shape):
         self.squares.append([[0,0], [2,1], [1,0], [2,0]])
         self.squares.append([[0,2], [1,0], [1,1], [1,2]])
     
-    def rotate(self):
-        self.direction = (self.direction+1)%4
-        return
 
 # TODO: if the rotation is not possible, check whether it is not possible after moving it left once or twice 
 # TODO: maybe flash a row that is full
@@ -458,4 +491,6 @@ def main(stdscr):
         game.progress()
         
 
-curses.wrapper(main)
+
+if __name__ == "__main__":
+    curses.wrapper(main)
