@@ -1,5 +1,6 @@
 """This is a game of tetris developed by an absolute amateur. Thank you.
 """
+import os
 import random
 import curses
 import time
@@ -45,7 +46,7 @@ class Shape:
         self.direction = 0  # Initialize direction attribute 
         self.rotations = 1  # Initialize rotations attribute
         self.squares = []  # Initialize squares
-        self.position_x = 5  # Initialize position x so that it starts in the middle
+        self.position_x = 4  # Initialize position x so that it starts in the middle
         self.position_y = 0  # Initialize position y so that it starts outside of the visible field
         
     def move_down(self):
@@ -134,7 +135,7 @@ class O_Block(Shape):
     Shape that is a two by two box - O. It has only one orientation thanks to rotations symmetry.
     The block looks like this:
                         self.direction == 0 : |#|#|
-                                             |#|#|      
+                                              |#|#|      
     """
     def __init__(self):
         super(O_Block, self).__init__()
@@ -146,9 +147,9 @@ class I_Block(Shape):
     Shape that is one four by one line. It has two orientations (directions).
     The block looks like this:
                         self.direction == 0 : |#|
-                                             |#|
-                                             |#|
-                                             |#|
+                                              |#|
+                                              |#|
+                                              |#|
                                              
                         self.direction == 1 : |#|#|#|#|
     """
@@ -171,7 +172,7 @@ class T_Block(Shape):
                                                |#|
                                                    
                         self.direction == 3 :   |#|#|#|
-                                                 |#|
+                                                  |#|
 
                         self.direction == 4 :    |#|
                                                |#|#|
@@ -276,45 +277,112 @@ class J_Block(Shape):
         self.squares.append([[0,2], [1,0], [1,1], [1,2]])
     
 
-# TODO: if the rotation is not possible, check whether it is not possible after moving it left once or twice 
 # TODO: maybe flash a row that is full
 # TODO: add docummentation to the classes - in progress
-# TODO: configure a pad with next block so that it looks nice
-# TODO: configure a pad with the score so that it looks nice
-# TODO: create a class of GUI-curses so that no drawing code is located in the class Game
+# TODO: add a different GUI - for example a TKinter
 
-
-class Game():
+class TetrisGUI():
+    def draw_game(self):
+        return
+    def draw_main_pad(self):
+        return
+    def draw_score_pad(self):
+        return
+    def draw_new_pad(self):
+        return
+    
+class CursesTetrisGUI(TetrisGUI):
+    """
+    
+    """
     def __init__(self, stdscr):
-        self.speed = 1
-        self.score = 0
-        self.height = 25
-        self.width = 10
         self.stdscr = stdscr
-        self.objects = []
-        self.current_object = None
-        self.next_object = self.generate_object()
         self.left_offset = 4
         self.upper_offset = 2
         self.main_pad = curses.newpad(26, 21)
-        self.score_pad = curses.newpad(5, 5)
+        self.score_pad = curses.newpad(5, 9)
         self.next_pad = curses.newpad(8,16)
-        self.draw_game()
-        # self.stdscr.refresh()
-        # self.draw_win_test()
-        self.current_object = self.generate_object()
-        self.draw_object(self.current_object)
-        self.free_squares = [[i,j] for j in range(self.width) for i in range(-5,21)]
-    
-    def update_next_object(self):
-        obj = self.next_object = self.generate_object()
+
+    def draw_game(self,next_object):
+        self.stdscr.clear()
+        # Draw tetris box
+        for i in range(21):
+            self.stdscr.addstr(i+self.upper_offset, self.left_offset,"|")
+            self.stdscr.addstr(i+self.upper_offset, 20+self.left_offset,"|")
+            
+        for i in range(19):   
+            self.stdscr.addstr(20+self.upper_offset, i+self.left_offset+1,"-")
+        
+        # Draw next pad
+        self.stdscr.addstr(self.upper_offset, 29,"----------------")
+        self.stdscr.addstr(self.upper_offset+8, 29,"----------------")
+        for i in range(9):
+            self.stdscr.addstr(self.upper_offset+i, 29, "|")
+            self.stdscr.addstr(self.upper_offset+i, 45, "|")
+
+        self.stdscr.refresh()
+        self.draw_next_pad(next_object)
+        self.draw_score_pad(0)
+        
+    def draw_taken_squares(self, free_squares):
+        for i in range(1,21):
+            for j in range(10):
+                if [i,j] in free_squares: 
+                    self.main_pad.addstr(i+4,j*2+1, ". ")
+                    continue
+                self.main_pad.addstr(i+4,j*2,"|@|")
+
+    def draw_object(self,obj):
+        for square in obj.get_squares():
+            row = obj.position_y-square[0]+4
+            col = obj.position_x+square[1]
+            self.main_pad.addstr(row,col*2,"|#|")      
+
+        self.main_pad.refresh(5, 1, self.upper_offset, self.left_offset+1 ,20+self.upper_offset-1 ,19+self.left_offset)
+
+    def draw_main_pad(self, free_squares, current_object):
+        self.main_pad.clear()
+        self.draw_taken_squares(free_squares)
+        self.draw_object(current_object) 
+  
+    def draw_score_pad(self, score):
+        self.score_pad.addstr(0,1," SCORE")
+        self.score_pad.addstr(1,0,"---------")
+        self.score_pad.addstr(2,0,"| {0:05d} |".format(score))
+        self.score_pad.addstr(3,0,"---------")
+        self.score_pad.refresh(0,0,15,30,20,38)
+
+    def draw_next_pad(self, obj):
         self.next_pad.clear()
         for square in obj.get_squares():
             row = -square[0]+4
             col = 2+square[1]
             self.next_pad.addstr(row,col*2,"|#|")      
+        self.next_pad.refresh(0,0,3,31,9,43)
 
-        self.next_pad.refresh(0, 0, 8, 30 ,15 ,45)
+
+class Game():
+    def __init__(self, tetris_gui):
+        self.tetris_gui = tetris_gui
+        self.score = 0
+        self._ended = False
+        self.current_object = None
+        self.next_object = self.generate_object()
+        self.tetris_gui.draw_game(self.next_object)
+        self.current_object = self.generate_object()
+        self.tetris_gui.draw_object(self.current_object)
+        self.free_squares = [[i,j] for j in range(10) for i in range(-5,21)]
+    
+    def reset(self):
+        self.__init__(self.tetris_gui)
+    
+    @property
+    def ended(self):
+        return self._ended
+    
+    def update_next_object(self):
+        self.next_object = self.generate_object()
+        self.tetris_gui.draw_next_pad(self.next_object)
         
     def update_score(self, erased_lines):
         if erased_lines == 1:
@@ -325,9 +393,8 @@ class Game():
             self.score += 16
         elif erased_lines == 4:
             self.score += 64
-        
-        self.score_pad.addstr(3,1,str(self.score))
-        self.score_pad.refresh(0,0,20,30,24,34)
+
+        self.tetris_gui.draw_score_pad(self.score)
         
     def can_rotate(self,moved_left=0):
         x = self.current_object.position_x
@@ -368,6 +435,11 @@ class Game():
             self.current_object.rotate()
             return     
         if self.can_rotate(moved_left=1):
+            self.current_object.move_left()
+            self.current_object.rotate()
+            return
+        if self.can_rotate(moved_left=2):
+            self.current_object.move_left()
             self.current_object.move_left()
             self.current_object.rotate()
             return
@@ -412,7 +484,6 @@ class Game():
 
 
     def place_object(self):
-        self.objects.append(self.current_object)
         x = self.current_object.position_x
         y = self.current_object.position_y
         for square in self.current_object.get_squares():
@@ -441,10 +512,17 @@ class Game():
             for i in range(10):
                 self.free_squares.append([-5,i])
 
-            
+    def check_lose(self):
+        for i in range(10):
+            if [0,i] not in self.free_squares: return True    
+        return False
+    
     def progress(self):
         if not self.can_move_down():
             self.place_object()
+            if self.check_lose():
+                self._ended = True
+                return
             self.update_next_object()
             full_lines = self.get_full_lines()
             if full_lines:
@@ -452,62 +530,11 @@ class Game():
                 self.update_score(len(full_lines))
             return        
         self.current_object.move_down()
-        self.draw_pad()
+        self.update_main_pad()
     
-
-    def draw_taken_squares(self):
-        for i in range(1,21):
-            for j in range(10):
-                # if [i,j] in self.free_squares: continue
-                if [i,j] in self.free_squares: 
-                    self.main_pad.addstr(i+4,j*2, " . ")
-                    continue
-                self.main_pad.addstr(i+4,j*2,"|@|")
-
-    
-    def draw_pad(self):
-        self.main_pad.clear()
-        # self.draw_objects()
-        self.draw_taken_squares()
-        self.draw_object(self.current_object) 
-  
-  
-    def draw_win_test(self):
-        for i in range(25):
-            for j in range(20):
-                self.main_pad.addstr(i,j,"@")
-        self.main_pad.refresh(5, 1, self.upper_offset, self.left_offset+1 ,20+self.upper_offset ,19+self.left_offset)
+    def update_main_pad(self):
+        self.tetris_gui.draw_main_pad(self.free_squares, self.current_object)
         
-
-    def draw_game(self):
-        self.stdscr.clear()
-        for i in range(21):
-            self.stdscr.addstr(i+self.upper_offset, self.left_offset,"|")
-            self.stdscr.addstr(i+self.upper_offset, 20+self.left_offset,"|")
-            
-        for i in range(19):   
-            self.stdscr.addstr(20+self.upper_offset, i+self.left_offset+1,"-")
-        self.stdscr.refresh()
-        
-        self.score_pad.addstr(3,1,str(self.score))
-        self.score_pad.refresh(0,0,20,30,24,34)
-        
-        self.update_next_object()
-        
-    def draw_object(self,obj):
-        for square in obj.get_squares():
-            row = obj.position_y-square[0]+4
-            col = obj.position_x+square[1]
-            self.main_pad.addstr(row,col*2,"|#|")      
-
-        self.main_pad.refresh(5, 1, self.upper_offset, self.left_offset+1 ,20+self.upper_offset-1 ,19+self.left_offset)
-    
-
-    def draw_objects(self):
-        for obj in self.objects:
-            self.draw_object(obj)
-        
-
     def user_input(self, key):
         if key == curses.KEY_RIGHT:
             self.move_right()
@@ -519,14 +546,13 @@ class Game():
             self.move_down()
         curses.flushinp()
             
-        self.draw_pad()
+        self.update_main_pad()
            
-    
-def main(stdscr):
+def curses_main(stdscr):
     stdscr.clear()
-    stdscr.resize(40,50)
     stdscr.nodelay(1)
-    game = Game(stdscr) 
+    tetris_gui = CursesTetrisGUI(stdscr)
+    game = Game(tetris_gui) 
     start = None
     
     while True:
@@ -535,6 +561,7 @@ def main(stdscr):
         while (end-start)<0.2:
             key = stdscr.getch()
             if key == 113: break
+            if key == 114: break
             if not (key == -1):
                 game.user_input(key)
             end = time.time()
@@ -542,10 +569,20 @@ def main(stdscr):
 
         if key == 113:
             break
+        if key == 114:
+            game.reset()
+            continue
         
         game.progress()
         
-
+        if game.ended:
+            break
+            
+        
 
 if __name__ == "__main__":
-    curses.wrapper(main)
+    UI = "c"
+    if UI == "c":
+        os.system(f"printf '\033[8;{25};{50}t'")
+        time.sleep(0.05)
+        curses.wrapper(curses_main)
