@@ -293,9 +293,16 @@ class TetrisGUI():
     
 class CursesTetrisGUI(TetrisGUI):
     """
-    
+    Console tetris GUI class derived from TetrisGUI. 
     """
     def __init__(self, stdscr):
+        """
+        Constructor of console GUI class.
+        ...
+        Arguements
+        ----------
+        stdscr : curses screen
+        """
         self.stdscr = stdscr
         self.left_offset = 4
         self.upper_offset = 2
@@ -412,7 +419,6 @@ class Game():
                 return False
         return True
 
-    
     def can_move_right(self):
         x = self.current_object.position_x
         y = self.current_object.position_y
@@ -420,8 +426,7 @@ class Game():
             if not [-square[0]+y,square[1]+x+1] in self.free_squares:
                 return False
         return True
-    
-    
+        
     def can_move_left(self):
         x = self.current_object.position_x
         y = self.current_object.position_y
@@ -547,7 +552,8 @@ class Game():
         curses.flushinp()
             
         self.update_main_pad()
-           
+
+
 def curses_main(stdscr):
     stdscr.clear()
     stdscr.nodelay(1)
@@ -577,7 +583,6 @@ def curses_main(stdscr):
         
         if game.ended:
             break
-            
         
 
 if __name__ == "__main__":
