@@ -1,0 +1,2 @@
+This is a simple tetris game. The GUI for console is implemented in curses so if one wants to run it he needs curses library. (for windows type into the console: pip intstall windows-curses).
+There is a possibility to add another GUI (tkinter/pygame), if anyone is interested implementing it, just let me know. The code probably needs some refactoring, but the console version works (until you lose, then the program ends).
